@@ -300,6 +300,120 @@
         const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#ff6b9d'];
         const decorationTypes = ['cherry', 'blueberry', 'mint', 'orange'];
         let currentColorIndex = 0;
+        let audioContext;
+        let isPlaying = false;
+        let musicLoop;
+
+        // Sayfa yüklendiğinde müziği başlat
+        window.addEventListener('load', () => {
+            // Kullanıcı etkileşimi için bekle
+            document.addEventListener('click', startBackgroundMusic, { once: true });
+            document.addEventListener('touchstart', startBackgroundMusic, { once: true });
+        });
+
+        // Audio Context'i başlat
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Nota frekansları (Hz)
+        const notes = {
+            'C4': 261.63,
+            'D4': 293.66,
+            'E4': 329.63,
+            'F4': 349.23,
+            'G4': 392.00,
+            'A4': 440.00,
+            'B4': 493.88,
+            'C5': 523.25
+        };
+
+        // Happy Birthday melodisi (nota ve süreleri)
+        const birthdayMelody = [
+            {note: 'C4', duration: 0.75},
+            {note: 'C4', duration: 0.25},
+            {note: 'D4', duration: 1},
+            {note: 'C4', duration: 1},
+            {note: 'F4', duration: 1},
+            {note: 'E4', duration: 2},
+            {note: 'C4', duration: 0.75},
+            {note: 'C4', duration: 0.25},
+            {note: 'D4', duration: 1},
+            {note: 'C4', duration: 1},
+            {note: 'G4', duration: 1},
+            {note: 'F4', duration: 2},
+            {note: 'C4', duration: 0.75},
+            {note: 'C4', duration: 0.25},
+            {note: 'C5', duration: 1},
+            {note: 'A4', duration: 1},
+            {note: 'F4', duration: 1},
+            {note: 'E4', duration: 1},
+            {note: 'D4', duration: 1},
+            {note: 'B4', duration: 0.75},
+            {note: 'B4', duration: 0.25},
+            {note: 'A4', duration: 1},
+            {note: 'F4', duration: 1},
+            {note: 'G4', duration: 1},
+            {note: 'F4', duration: 2}
+        ];
+
+        function playNote(frequency, duration, volume = 0.15) {
+            if (!audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + 0.01);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration - 0.01);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        async function startBackgroundMusic() {
+            initAudio();
+            
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+            }
+
+            playBirthdayLoop();
+        }
+
+        function playBirthdayLoop() {
+            if (isPlaying) return;
+            
+            isPlaying = true;
+            
+            let totalTime = 0;
+            
+            for (let i = 0; i < birthdayMelody.length; i++) {
+                const { note, duration } = birthdayMelody[i];
+                
+                setTimeout(() => {
+                    if (audioContext) {
+                        playNote(notes[note], duration * 0.4, 0.1); // Daha düşük ses seviyesi
+                    }
+                }, totalTime * 400);
+                
+                totalTime += duration;
+            }
+
+            // Şarkı bitince tekrar başlat (döngü)
+            musicLoop = setTimeout(() => {
+                isPlaying = false;
+                playBirthdayLoop();
+            }, (totalTime * 400) + 2000); // 2 saniye ara
+        }
 
         function addCandle() {
             if (candleCount >= 8) {
